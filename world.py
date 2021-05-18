@@ -201,7 +201,7 @@ class World:
 		if self.get_block_number(position) == number: # no point updating mesh if the block is the same
 			return
 
-		if not number and (self.get_block_number(position) == 13 or self.get_block_number(position) == 14:
+		if not number and (self.get_block_number(position) == 13 or self.get_block_number(position) == 14):
 			self.remove_light(x, y, z)
 
 
