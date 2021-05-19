@@ -57,16 +57,18 @@ class World:
 				for i in range(chunk.CHUNK_WIDTH):
 					for j in range(chunk.CHUNK_HEIGHT):
 						for k in range(chunk.CHUNK_LENGTH):
-							pos = ((x - 1) * chunk.CHUNK_WIDTH + i, j,
-								   (z - 1) * chunk.CHUNK_LENGTH + k)
-							if j > 13: self.create_skylight(*pos, default_sky_light)
 							if j == 13: current_chunk.blocks[i][j][k] = random.choices([0, 9, 10], [20, 2, 1])[0]
 							elif j == 12: current_chunk.blocks[i][j][k] = 2
 							elif 9 < j < 12: current_chunk.blocks[i][j][k] = 4
 							elif j < 10: current_chunk.blocks[i][j][k] = 5
 				self.chunks[chunk_position] = current_chunk
 
-
+		for x in range(RENDERDISTANCE * chunk.CHUNK_WIDTH):
+			for z in range(RENDERDISTANCE * chunk.CHUNK_LENGTH):
+				x1 = x - RENDERDISTANCE * chunk.CHUNK_WIDTH / 2
+				z1 = z - RENDERDISTANCE * chunk.CHUNK_LENGTH / 2
+				pos = (x1, 0, z1)
+				self.init_skylight(*pos, default_sky_light)
 
 		for chunk_position in self.chunks:
 			self.chunks[chunk_position].update_subchunk_meshes()
@@ -76,17 +78,65 @@ class World:
 		face = self.get_direction_vector(face_number)
 		return max(self.get_block_light(x+face[0], y+face[1], z+face[2]), self.get_sky_light(x+face[0], y+face[1], z+face[2]))
 
-	def create_skylight(self, x, y, z, light):  # Currently Broken
+	def init_skylight(self, x, y, z, light, ignore=[]):
+		print(f"creating skylight at {x} {y} {z}")
 		if self.is_opaque_block((x, y, z)):
 			return
 		self.set_sky_light(x, y, z, light)
-		pos = (x, y - 1, z)
-		if self.is_opaque_block(pos) or self.get_block_light(*pos) > light:
+		if (x, y, z) in ignore:
 			return
-		if y < 0:
+		if abs(x) > chunk.CHUNK_WIDTH * RENDERDISTANCE or y < -16 or y > 16 or abs(
+				z) > chunk.CHUNK_LENGTH * RENDERDISTANCE:
 			return
-		self.create_skylight(*pos, light)
+		if not light:
+			return
+		vector = self.get_direction_vector(3)
+		pos = (x + vector[0], y + vector[1], z + vector[2])
+		l = light + 1
+		if self.is_opaque_block(pos) or pos in ignore or self.get_sky_light(*pos) >= l:
+			return
+		ignore += [(x, y, z)]
+		self.init_skylight(*pos, l - 1, ignore)
 
+	def create_skylight(self, x, y, z, light, ignore=[]):  # Currently Broken
+		print(f"creating skylight at {x} {y} {z}")
+		if self.is_opaque_block((x, y, z)):
+			return
+		self.set_sky_light(x, y, z, light)
+		if (x, y, z) in ignore:
+			return
+		if abs(x) > chunk.CHUNK_WIDTH * RENDERDISTANCE or y < -16 or y > 16 or abs(z) > chunk.CHUNK_LENGTH * RENDERDISTANCE:
+			return
+		if not light:
+			return
+		for face in range(0, 6):
+			vector = self.get_direction_vector(face)
+			pos = (x + vector[0], y + vector[1], z + vector[2])
+			l = light
+			if face == 3:
+				l = light + 1
+			if self.is_opaque_block(pos) or pos in ignore or self.get_sky_light(*pos) >= l:
+				continue
+			ignore += [(x, y, z)]
+			self.create_skylight(*pos, l - 1, ignore)
+
+	def remove_skylight(self, x, y, z, ignore=[]):
+		if self.is_opaque_block((x, y, z)):
+			self.set_sky_light(x, y, z, 0)
+			return
+		self.set_sky_light(x, y, z, 0)
+		if (x, y, z) in ignore:
+			return
+		if abs(x) > chunk.CHUNK_WIDTH * RENDERDISTANCE or y < -16 or y > 16 or abs(z) > chunk.CHUNK_LENGTH * RENDERDISTANCE:
+			return
+		for face in range(0, 6):
+			vector = self.get_direction_vector(face)
+			pos = (x + vector[0], y + vector[1], z + vector[2])
+			l = 0
+			if self.is_opaque_block(pos) or pos in ignore or self.get_sky_light(*pos) >= l:
+				continue
+			ignore += [(x, y, z)]
+			self.remove_skylight(*pos, l - 1, ignore)
 
 	def create_light(self, x, y, z, l, ignore=None):
 		if self.is_opaque_block((x, y, z)) or self.get_block_light(x, y, z) >= l:
@@ -145,6 +195,25 @@ class World:
 	def set_block_light(self, x, y, z, light):
 		self.lightMap[(x, y, z)] = light
 
+	def update_skylight(self, chunkposition):
+		_chunk = self.chunks.get(chunkposition, None)
+		if _chunk is None:
+			return
+		for lx in range(chunk.CHUNK_WIDTH):
+			for ly in range(chunk.CHUNK_HEIGHT):
+				for lz in range(chunk.CHUNK_LENGTH):
+					x = lx + chunk.CHUNK_WIDTH * chunkposition[0]
+					y = lx + chunk.CHUNK_HEIGHT * chunkposition[1]
+					z = lx + chunk.CHUNK_LENGTH * chunkposition[2]
+					self.set_sky_light(x, y, z, 0)
+		for lx in range(chunk.CHUNK_WIDTH):
+			for lz in range(chunk.CHUNK_LENGTH):
+				x = lx + chunk.CHUNK_WIDTH * chunkposition[0]
+				z = lx + chunk.CHUNK_LENGTH * chunkposition[2]
+				self.create_light(x, 0, z, default_sky_light)
+
+
+
 	# create functions to make things a bit easier
 
 	def get_chunk_position(self, position):
@@ -190,7 +259,9 @@ class World:
 		x, y, z = position
 		chunk_position = self.get_chunk_position(position)
 
-		self.create_skylight(x, chunk.CHUNK_HEIGHT, z, default_sky_light)
+
+
+
 		if not chunk_position in self.chunks: # if no chunks exist at this position, create a new one
 			if number == 0:
 				return # no point in creating a whole new chunk if we're not gonna be adding anything
@@ -213,6 +284,13 @@ class World:
 
 		self.chunks[chunk_position].blocks[lx][ly][lz] = number
 
+		l = self.get_sky_light(x, y + 1, z)
+		if l:
+			self.create_skylight(x, y, z, l)
+
+		if number:
+			self.update_skylight(chunk_position)
+
 		if not number and not (self.get_block_number(position) == 13 or number == 14):
 			lights = []
 			for f in range(0, 6):
@@ -220,6 +298,11 @@ class World:
 				lights.append(self.get_block_light(x+face[0], y+face[1], z+face[2]))
 				l = max(lights)
 			self.create_light(x, y, z, l-1)
+
+		if number:
+			if self.is_opaque_block(position):
+				self.set_sky_light(*position, 0)
+				self.set_block_light(*position, 0)
 
 		self.chunks[chunk_position].update_at_position((x, y, z))
 		self.chunks[chunk_position].update_mesh()
