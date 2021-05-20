@@ -76,7 +76,10 @@ class World:
 
 	def getfacelight(self, x, y, z, face_number):
 		face = self.get_direction_vector(face_number)
-		return max(self.get_block_light(x+face[0], y+face[1], z+face[2]), self.get_sky_light(x+face[0], y+face[1], z+face[2]))
+		skylight = self.get_sky_light(x+face[0], y+face[1], z+face[2])
+		if skylight < 0:
+			skylight = default_sky_light/2
+		return max(self.get_block_light(x+face[0], y+face[1], z+face[2]), skylight)
 
 	def init_skylight(self, x, y, z, light, ignore=[]):
 		print(f"creating skylight at {x} {y} {z}")
@@ -184,7 +187,7 @@ class World:
 		return face
 
 	def get_sky_light(self, x, y, z):
-		return self.skylightMap.get((x, y, z), 0)
+		return self.skylightMap.get((x, y, z), -1)
 
 	def set_sky_light(self, x, y, z, light):
 		self.skylightMap[(x, y, z)] = light
@@ -284,19 +287,20 @@ class World:
 
 		self.chunks[chunk_position].blocks[lx][ly][lz] = number
 
-		l = self.get_sky_light(x, y + 1, z)
-		if l:
-			self.create_skylight(x, y, z, l)
 
 		if number:
 			self.update_skylight(chunk_position)
 
 		if not number and not (self.get_block_number(position) == 13 or number == 14):
 			lights = []
+			slights = []
 			for f in range(0, 6):
 				face = self.get_direction_vector(f)
 				lights.append(self.get_block_light(x+face[0], y+face[1], z+face[2]))
-				l = max(lights)
+				slights.append(self.get_sky_light(x + face[0], y + face[1], z + face[2]))
+			l = max(lights)
+			sl = max(slights)
+			self.create_skylight(x, y, z, sl - 1)
 			self.create_light(x, y, z, l-1)
 
 		if number:
