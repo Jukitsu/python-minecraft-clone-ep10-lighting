@@ -3,6 +3,7 @@ import math
 
 import pyglet.gl as gl
 
+import models.cube
 import subchunk
 from queue import Queue
 
@@ -60,6 +61,47 @@ class Chunk:
 		self.ibo = gl.GLuint(0)
 		gl.glGenBuffers(1, self.ibo)
 
+		self.lightMap = {}
+		self.skylightMap = {}
+
+	def get_direction_vector(self, face_number):
+		face = ()
+		if face_number == 0:  # EAST
+			face = (1, 0, 0)
+		if face_number == 1:  # WEST
+			face = (-1, 0, 0)
+		if face_number == 2:
+			face = (0, 1, 0)  # UP
+		if face_number == 3:
+			face = (0, -1, 0)  # DOWN
+		if face_number == 4:
+			face = (0, 0, 1)  # SOUTH
+		if face_number == 5:
+			face = (0, 0, -1)  # NORTH
+		return face
+
+	def getfacelight(self, x, y, z, face_number):
+		face = self.get_direction_vector(face_number)
+		skylight = self.get_sky_light(x+face[0], y+face[1], z+face[2])
+		if skylight < 0:
+			skylight = 0
+		return max(self.get_block_light(x+face[0], y+face[1], z+face[2]), skylight)
+
+	def get_sky_light(self, x, y, z):
+		return self.skylightMap.get((x, y, z), 0)
+
+	def set_sky_light(self, x, y, z, light):
+		self.skylightMap[(x % CHUNK_WIDTH, y % CHUNK_HEIGHT, z % CHUNK_LENGTH)] = light
+
+	def get_block_light(self, x, y, z):
+		return self.lightMap.get((x, y, z), 0)
+
+	def set_block_light(self, x, y, z, light):
+		self.lightMap[(x % CHUNK_WIDTH, y % CHUNK_HEIGHT, z % CHUNK_LENGTH)] = light
+
+	def update_skylight(self):
+		pass
+
 
 
 	def update_subchunk_meshes(self):
@@ -95,7 +137,23 @@ class Chunk:
 		if lz == subchunk.SUBCHUNK_LENGTH - 1: try_update_subchunk_mesh((sx, sy, sz + 1))
 		if lz == 0: try_update_subchunk_mesh((sx, sy, sz - 1))
 
-	def update_mesh(self):
+	def is_opaque_block(self, position):
+		# get block type and check if it's opaque or not
+		# air counts as a transparent block, so test for that too
+
+		lx, ly, lz = position
+		cx, cy, cz = self.chunk_position
+		x = cx * CHUNK_WIDTH + lx
+		y = cy * CHUNK_HEIGHT + ly
+		z = cz * CHUNK_LENGTH + lz
+
+		return self.world.is_opaque_block((x, y, z))
+
+
+	def update_light(self):
+		pass
+
+	def update_mesh(self, light_update = False):
 		# combine all the small subchunk meshes into one big chunk mesh
 
 		self.mesh_vertex_positions = []
@@ -116,7 +174,9 @@ class Chunk:
 			
 			self.mesh_indices.extend(mesh_indices)
 			self.mesh_index_counter += subchunk.mesh_index_counter
-		
+
+		if light_update:
+			self.update_light()
 		# send the full mesh data to the GPU and free the memory used client-side (we don't need it anymore)
 		# don't forget to save the length of 'self.mesh_indices' before freeing
 

@@ -41,7 +41,6 @@ class Subchunk:
         self.mesh_indices = []
 
         def add_face(self, face=None, light_levels=None):
-            light_level = 0
             vertex_positions = block_type.vertex_positions[face].copy()
 
             for i in range(4):
@@ -68,7 +67,6 @@ class Subchunk:
         for local_x in range(SUBCHUNK_WIDTH):
             for local_y in range(SUBCHUNK_HEIGHT):
                 for local_z in range(SUBCHUNK_LENGTH):
-                    shading_values = []
                     parent_lx = self.local_position[0] + local_x
                     parent_ly = self.local_position[1] + local_y
                     parent_lz = self.local_position[2] + local_z
@@ -76,19 +74,21 @@ class Subchunk:
                     block_number = self.parent.blocks[parent_lx][parent_ly][parent_lz]
 
                     if block_number:
+                        if block_number in self.world.light_blocks:
+                            self.world.create_light(parent_lx, parent_ly, parent_lz, 15)
                         block_type = self.world.block_types[block_number]
 
                         x, y, z = (
                             self.position[0] + local_x,
                             self.position[1] + local_y,
                             self.position[2] + local_z)
-                        pos = (x, y, z)
-                        light_levels = list([self.world.getfacelight(x, y, z, 0),
-                                                          self.world.getfacelight(x, y, z, 1),
-                                                          self.world.getfacelight(x, y, z, 2),
-                                                          self.world.getfacelight(x, y, z, 3),
-                                                          self.world.getfacelight(x, y, z, 4),
-                                                          self.world.getfacelight(x, y, z, 5)])
+
+                        light_levels = list([self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 0),
+                                                          self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 1),
+                                                          self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 2),
+                                                          self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 3),
+                                                          self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 4),
+                                                          self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 5)])
 
                         # if block is cube, we want it to check neighbouring blocks so that we don't uselessly render faces
                         # if block isn't a cube, we just want to render all faces, regardless of neighbouring blocks
