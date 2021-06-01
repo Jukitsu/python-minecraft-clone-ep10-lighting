@@ -63,6 +63,7 @@ class Chunk:
 
 		self.lightMap = {}
 		self.skylightMap = {}
+		self.to_update = []
 
 	def get_direction_vector(self, face_number):
 		face = ()
@@ -83,21 +84,23 @@ class Chunk:
 	def getfacelight(self, x, y, z, face_number):
 		face = self.get_direction_vector(face_number)
 		skylight = self.get_sky_light(x+face[0], y+face[1], z+face[2])
+		blocklight = self.get_block_light(x+face[0], y+face[1], z+face[2])
 		if skylight < 0:
 			skylight = 0
-		return max(self.get_block_light(x+face[0], y+face[1], z+face[2]), skylight)
+		return max(blocklight, skylight)
 
 	def get_sky_light(self, x, y, z):
 		return self.skylightMap.get((x, y, z), 0)
 
 	def set_sky_light(self, x, y, z, light):
-		self.skylightMap[(x % CHUNK_WIDTH, y % CHUNK_HEIGHT, z % CHUNK_LENGTH)] = light
+		self.skylightMap[(x, y, z)] = light
 
 	def get_block_light(self, x, y, z):
 		return self.lightMap.get((x, y, z), 0)
 
 	def set_block_light(self, x, y, z, light):
-		self.lightMap[(x % CHUNK_WIDTH, y % CHUNK_HEIGHT, z % CHUNK_LENGTH)] = light
+		self.lightMap[(x, y, z)] = light
+		self.to_update.append((x, y, z))
 
 	def update_skylight(self):
 		pass
@@ -150,8 +153,7 @@ class Chunk:
 		return self.world.is_opaque_block((x, y, z))
 
 
-	def update_light(self):
-		pass
+
 
 	def update_mesh(self, light_update = False):
 		# combine all the small subchunk meshes into one big chunk mesh
@@ -175,8 +177,6 @@ class Chunk:
 			self.mesh_indices.extend(mesh_indices)
 			self.mesh_index_counter += subchunk.mesh_index_counter
 
-		if light_update:
-			self.update_light()
 		# send the full mesh data to the GPU and free the memory used client-side (we don't need it anymore)
 		# don't forget to save the length of 'self.mesh_indices' before freeing
 

@@ -48,3 +48,11 @@ class Vec3D:
     def __getitem__(self, index):
         return self.vector[index]
 
+
+NORTH = Vec3D(0, 0, -1)
+SOUTH = Vec3D(0, 0, 1)
+WEST = Vec3D(-1, 0, 0)
+EAST = Vec3D(1, 0, 0)
+UP = Vec3D(0, 1, 0)
+DOWN = Vec3D(0, -1, 0)
+
