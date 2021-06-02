@@ -19,8 +19,8 @@ import time
 
 light_threads = []
 
-RENDERDISTANCE = 4
-WORLDSIZE = 2
+RENDERDISTANCE = 8
+WORLDSIZE = 8
 max_light_level = models.cube.max_light_level
 
 default_sky_light = 15
@@ -139,7 +139,7 @@ class World:
                             cx, cy, cz = (rx - 1, -1, rz - 1)
                             x, y, z = cx + i, cy + j, cz + k
                             if j > 13:
-                                self.create_skylight(x, y, z, 15)
+                                self.create_skylight((x, y, z), 15)
 
         for chunk_position in self.chunks.keys():
             self.chunks[chunk_position].update_subchunk_meshes()
@@ -158,35 +158,14 @@ class World:
                 return None
         return newchunk
 
-    def create_skylight(self, x, y, z, light):  # Currently Broken
+    def create_skylight(self, pos, light):  # Currently Broken
         if 1: return
-        lpos = self.get_local_position((x, y, z))
-        _chunk = self.chunks.get(self.get_chunk_position((x, y, z)), None)
-        if _chunk is None:
-            _chunk = chunk.Chunk(self, self.get_chunk_position((x, y, z)))
-            self.chunks[self.get_chunk_position((x, y, z))] = _chunk
-        skylightBfsQueue.put(BFSLightNode(*lpos, _chunk, light))
-        _chunk.set_block_light(lpos, light)
-        while not skylightBfsQueue.empty():
-            node = skylightBfsQueue.get()
-            blockchunk = node._chunk
-            nx, ny, nz = node.x, node.y, node.z
-            current_skylight = node.light
-            for face in range(0, 6):
-                if face == 2:
-                    continue
-                fx, fy, fz = self.get_direction_vector(face)
-                mpos = (nx + fx, ny + fy, nz + fz)
-                cpos = self.interchunk(mpos, blockchunk)
-                if cpos not in self.chunks.keys():
-                    newchunk = chunk.Chunk(self, cpos)
-                    self.chunks[cpos] = newchunk
-                else:
-                    newchunk = self.chunks[cpos]
-                pos = self.get_local_position(mpos)
-                if not newchunk.is_opaque_block(pos) and newchunk.get_sky_light(*pos) + 2 <= current_skylight:
-                    newchunk.set_sky_light(*pos, current_skylight - 1)
-                    skylightBfsQueue.put(BFSLightNode(*pos, newchunk, current_skylight - 1))
+        lpos = self.get_local_position(pos)
+        cpos = self.get_chunk_position(pos)
+        _chunk = self.get_chunk(cpos)
+        lightBfsQueue.put(BFSLightNode(*lpos, _chunk, light, SKYLIGHT))
+        _chunk.set_sky_light(lpos, light)
+        self.propagate_light()
 
     def remove_skylight(self, x, y, z, ignore=[]):
         if 1: return
@@ -405,12 +384,14 @@ class World:
             lnodes.append(lnode)
             lights.append(neighbourl)
             slights.append(neighboursl)
-        l = max(lights)
-        sl = max(slights)
-        lnode = lnodes[lights.index(l)]
-        snode = snodes[slights.index(sl)]
-        lightBfsQueue.put(lnode)
-        lightBfsQueue.put(snode)
+        if len(lights):
+            l = max(lights)
+            lnode = lnodes[lights.index(l)]
+            lightBfsQueue.put(lnode)
+        if len(slights):
+            sl = max(slights)
+            snode = snodes[slights.index(sl)]
+            lightBfsQueue.put(snode)
         self.propagate_light()
 
 
