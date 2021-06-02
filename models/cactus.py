@@ -32,14 +32,25 @@ shading_values = [
 max_light_level = 15
 
 
-def get_face_shading_values(light_level, face_number):
+def get_face_shading_values(light_level, face_number):  # very inefficient way of doing it :/
     if not options.LIGHTING:
         return shading_values[face_number]
     light_multiplier = 1
     if options.LIGHTING_TYPE == "EXPONENTIAL":
-        light_multiplier = min(0.8 ** (max_light_level - light_level) + options.BRIGHTNESS / 5, 1)
+        light_multiplier = min((0.8)**(max_light_level - light_level) + options.BRIGHTNESS/10, 1)
     elif options.LIGHTING_TYPE == "LINEAR":
         light_multiplier = (light_level + 1 + options.BRIGHTNESS * 2) / (max_light_level + 1)
+    s = (shading_values[face_number][0] * light_multiplier)
+    t = [s, s, s, s]
+    return t
+
+def get_face_shading_values_b(light_level, skylight_level, face_number):
+    light_multiplier = 1
+    assert options.LIGHTING_TYPE == "EXPONENTIAL", "Incompatible settings"
+    if light_level > skylight_level:
+        light_multiplier = min((0.8)**(max_light_level - light_level) + options.BRIGHTNESS/10, 1)
+    elif light_level <= skylight_level:
+        light_multiplier = min((0.8)**(max_light_level - skylight_level) + options.BRIGHTNESS/5, 1)
     s = (shading_values[face_number][0] * light_multiplier)
     t = [s, s, s, s]
     return t

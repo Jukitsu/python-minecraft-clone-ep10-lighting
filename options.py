@@ -5,7 +5,11 @@ DYNAMIC_LIGHTING = LIGHTING  # Totally useless variable, but is used sometimes i
 
 LIGHTING_TYPE = "EXPONENTIAL"  # Exponential -> Alpha lighting, darker / Linear -> Indev lighting, brighter
 
+LIGHTING_ENGINE = "B1.8"  # ALPHA -> Alpha lighting engine, skylighting and lighting are procesed together /
+# B1.8 -> Beta 1.8 lighting engine, skyligh and light are separated
+
 BRIGHTNESS = 1  # Brightness setting, 0 is Moody, 1 is Bright
+
 
 
 MIPMAP = True  # Enable Mipmaps
