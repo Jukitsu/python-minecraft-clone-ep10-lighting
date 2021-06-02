@@ -14,6 +14,7 @@ from collections import deque
 import models.plant
 import models.cactus
 import models.cube
+import models.torch
 
 import time
 
@@ -101,7 +102,8 @@ class World:
                                                        "sides": "cactus_side"}, models.cactus))
         self.block_types.append(
             block_type.Block_type(self.texture_manager, "dead_bush", {"all": "dead_bush"}, models.plant))
-        self.block_types.append(block_type.Block_type(self.texture_manager, "torch", {"all": "torch_on"}, models.plant))
+        #self.block_types.append(block_type.Block_type(self.texture_manager, "torch", {"all": "torch_on"}, models.plant))
+        self.block_types.append(block_type.Block_type(self.texture_manager, "torch", {"top": "torch_top", "sides": "torch_side"}, models.torch, 15))
         self.block_types.append(block_type.Block_type(self.texture_manager, "glowstone", {"all": "glowstone"}))
 
         self.texture_manager.generate_mipmaps()
