@@ -81,10 +81,13 @@ class Chunk:
 			face = (0, 0, -1)  # NORTH
 		return face
 
-	def getfacelight(self, x, y, z, face_number):
-		face = self.get_direction_vector(face_number)
-		skylight = self.get_sky_light(x+face[0], y+face[1], z+face[2])
-		blocklight = self.get_block_light(x+face[0], y+face[1], z+face[2])
+	def getfacelight(self, x, y, z, face_number, is_opaque=True):
+		if not is_opaque:
+			return max(self.get_sky_light(x, y, z), self.get_block_light(x, y, z))
+		fx, fy, fz = self.get_direction_vector(face_number)
+		pos = (x+fx, y+fy, z+fz)
+		skylight = self.get_sky_light(x+fx, y+fy, z+fz)
+		blocklight = self.get_block_light(x+fx, y+fy, z+fz)
 		if skylight < 0:
 			skylight = 0
 		return max(blocklight, skylight)
@@ -96,6 +99,8 @@ class Chunk:
 		self.skylightMap[(x, y, z)] = light
 
 	def get_block_light(self, x, y, z):
+		if (x, y, z) not in self.lightMap:
+			self.lightMap[(x, y, z)] = 0
 		return self.lightMap.get((x, y, z), 0)
 
 	def set_block_light(self, x, y, z, light):

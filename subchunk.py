@@ -65,10 +65,7 @@ class Subchunk:
             self.mesh_index_counter += 4
 
             self.mesh_tex_coords.extend(block_type.tex_coords[face])
-            if block_type.is_cube:
-                shading_values = models.cube.get_face_shading_values(light_levels[face], face)
-            else:
-                shading_values = block_type.shading_values[face]
+            shading_values = block_type.model.get_face_shading_values(light_levels[face], face)
             self.mesh_shading_values.extend(shading_values)
 
         for local_x in range(SUBCHUNK_WIDTH):
@@ -90,18 +87,18 @@ class Subchunk:
                             self.position[1] + local_y,
                             self.position[2] + local_z)
 
-                        light_levels = list([self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 0),
-                                                          self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 1),
-                                                          self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 2),
-                                                          self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 3),
-                                                          self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 4),
-                                                          self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 5)])
 
                         # if block is cube, we want it to check neighbouring blocks so that we don't uselessly render faces
                         # if block isn't a cube, we just want to render all faces, regardless of neighbouring blocks
                         # since the vast majority of blocks are probably anyway going to be cubes, this won't impact performance all that much; the amount of useless faces drawn is going to be minimal
 
                         if block_type.is_cube:
+                            light_levels = [self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 0),
+                                                 self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 1),
+                                                 self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 2),
+                                                 self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 3),
+                                                 self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 4),
+                                                 self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 5)]
                             if not self.world.is_opaque_block((x + 1, y, z)): add_face(self, 0, light_levels, parent_pos)
                             if not self.world.is_opaque_block((x - 1, y, z)): add_face(self, 1, light_levels, parent_pos)
                             if not self.world.is_opaque_block((x, y + 1, z)): add_face(self, 2, light_levels, parent_pos)
@@ -110,5 +107,9 @@ class Subchunk:
                             if not self.world.is_opaque_block((x, y, z - 1)): add_face(self, 5, light_levels, parent_pos)
 
                         else:
+                            light_levels = []
                             for i in range(len(block_type.vertex_positions)):
-                                add_face(self, i, None, lpos)
+                                flag = self.parent.is_opaque_block(parent_pos)
+                                light_levels.append(self.parent.getfacelight(parent_lx, parent_ly, parent_lz, i, flag))
+                            for i in range(len(block_type.vertex_positions)):
+                                add_face(self, i, light_levels, lpos)

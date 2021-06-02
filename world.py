@@ -216,25 +216,22 @@ class World:
             node = lightBfsQueue.get()
             blockchunk = node._chunk
             nx, ny, nz = node.x, node.y, node.z
-            nvec = Vec3D(nx, ny, nz)
             current_light = node.light
             light_type = node.light_type
             for face in range(0, 6):
-                fvec = self.get_direction_vector(face)
-                mpos = fvec + nvec
+                fx, fy, fz = self.get_direction_vector(face)
+                mpos = (nx + fx, ny + fy, nz + fz)
                 cpos = self.interchunk(*mpos, blockchunk)
                 pos = self.get_local_position(mpos)
                 newchunk = self.get_chunk(cpos)
                 if not newchunk.is_opaque_block(pos) and newchunk.get_block_light(*pos) + 2 <= current_light:
-                    if newchunk != blockchunk:
-                        self.set_light(blockchunk, mpos, current_light - 1, light_type)
+                    self.set_light(blockchunk, mpos, current_light - 1, light_type)
                     self.set_light(newchunk, pos, current_light - 1, light_type)
                     lightBfsQueue.put(BFSLightNode(*pos, newchunk, current_light - 1, light_type))
-                px, py, pz = pos
-                lupos = (math.floor(px / subchunk.SUBCHUNK_WIDTH),
-                         math.floor(py / subchunk.SUBCHUNK_HEIGHT),
-                         math.floor(pz / subchunk.SUBCHUNK_LENGTH))
-                if LightUpdateNode(newchunk, lupos) not in self.lightupdatequeue.queue and newchunk != blockchunk:
+                    px, py, pz = pos
+                    lupos = (math.floor(px / subchunk.SUBCHUNK_WIDTH),
+                             math.floor(py / subchunk.SUBCHUNK_HEIGHT),
+                             math.floor(pz / subchunk.SUBCHUNK_LENGTH))
                     self.lightupdatequeue.put(LightUpdateNode(newchunk, lupos))
         endtime = time.time()
         if round(endtime - starttime, 2):
@@ -291,14 +288,13 @@ class World:
                     blockchunk.set_block_light(*mpos, 0)
                     newchunk.set_block_light(*pos, 0)
                     removeBfsQueue.put(BFSLightRemovalNode(*pos, newchunk, neighbor))
+                    px, py, pz = pos
+                    lupos = (math.floor(px / subchunk.SUBCHUNK_WIDTH),
+                             math.floor(py / subchunk.SUBCHUNK_HEIGHT),
+                             math.floor(pz / subchunk.SUBCHUNK_LENGTH))
+                    self.lightupdatequeue.put(LightUpdateNode(newchunk, lupos))
                 elif neighbor >= light:
                     lightBfsQueue.put(BFSLightNode(*pos, newchunk, neighbor, BLOCKLIGHT))
-                px, py, pz = pos
-                lupos = (math.floor(px / subchunk.SUBCHUNK_WIDTH),
-                         math.floor(py / subchunk.SUBCHUNK_HEIGHT),
-                         math.floor(pz / subchunk.SUBCHUNK_LENGTH))
-                if (LightUpdateNode(newchunk, lupos) not in self.lightupdatequeue.queue) and newchunk != blockchunk:
-                    self.lightupdatequeue.put(LightUpdateNode(newchunk, lupos))
         endtime = time.time()
         if round(endtime - starttime, 2):
             print(f"unpropagation algorithm took {round(endtime - starttime, 3)}")  # debug
@@ -366,9 +362,13 @@ class World:
             self.lightupdatequeue.reset()
         size = self.lightupdatequeue.qsize()
         chunk_updates = []
+        updated_subchunks = []
         for i in range(size):
             node = self.lightupdatequeue.get()
-            node.newchunk.subchunks[node.position].update_mesh()
+            _subchunk = node.newchunk.subchunks[node.position]
+            if _subchunk not in updated_subchunks:
+                _subchunk.update_mesh()
+                updated_subchunks.append(_subchunk)
             if node.newchunk not in chunk_updates:
                 chunk_updates.append(node.newchunk)
         for newchunk in chunk_updates:

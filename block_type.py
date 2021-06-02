@@ -6,6 +6,7 @@ class Block_type:
     def __init__(self, texture_manager, name="unknown", block_face_textures={"all": "cobblestone"}, model=models.cube,
                  has_light=False):
         self.name = name
+        self.model = model
 
         # create members based on model attributes
 
