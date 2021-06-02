@@ -81,31 +81,50 @@ class Chunk:
 			face = (0, 0, -1)  # NORTH
 		return face
 
-	def getfacelight(self, x, y, z, face_number, is_opaque=True):
+	def getfacelight(self, pos, face_number, is_opaque=True):
+		x, y, z = pos
 		if not is_opaque:
-			return max(self.get_sky_light(x, y, z), self.get_block_light(x, y, z))
+			return max(self.get_sky_light(pos), self.get_block_light(pos))
 		fx, fy, fz = self.get_direction_vector(face_number)
-		pos = (x+fx, y+fy, z+fz)
-		skylight = self.get_sky_light(x+fx, y+fy, z+fz)
-		blocklight = self.get_block_light(x+fx, y+fy, z+fz)
+		npos = (x+fx, y+fy, z+fz)
+		skylight = self.get_sky_light(npos)
+		blocklight = self.get_block_light(npos)
 		if skylight < 0:
 			skylight = 0
 		return max(blocklight, skylight)
 
-	def get_sky_light(self, x, y, z):
-		return self.skylightMap.get((x, y, z), 0)
+	def get_sky_light(self, pos):
+		x, y, z = pos
+		_chunk = self
+		cpos = self.world.interchunk(pos, self)
+		_chunk = self.world.get_chunk(cpos, False)
+		if _chunk is None:
+			return 0
+		return _chunk._get_sky_light((x % CHUNK_WIDTH, y % CHUNK_HEIGHT, z % CHUNK_LENGTH))
 
-	def set_sky_light(self, x, y, z, light):
-		self.skylightMap[(x, y, z)] = light
+	def get_block_light(self, pos):
+		x, y, z = pos
+		_chunk = self
+		cpos = self.world.interchunk(pos, self)
+		_chunk = self.world.get_chunk(cpos, False)
+		if _chunk is None:
+			return 0
+		return _chunk._get_block_light((x % CHUNK_WIDTH, y % CHUNK_HEIGHT, z % CHUNK_LENGTH))
 
-	def get_block_light(self, x, y, z):
-		if (x, y, z) not in self.lightMap:
-			self.lightMap[(x, y, z)] = 0
-		return self.lightMap.get((x, y, z), 0)
+	def _get_sky_light(self, pos):
+		return self.skylightMap.get(pos, 0)
 
-	def set_block_light(self, x, y, z, light):
-		self.lightMap[(x, y, z)] = light
-		self.to_update.append((x, y, z))
+	def set_sky_light(self, pos, light):
+		self.skylightMap[pos] = light
+
+	def _get_block_light(self, pos):
+		if pos not in self.lightMap:
+			self.lightMap[pos] = 0
+		return self.lightMap.get(pos, 0)
+
+	def set_block_light(self, pos, light):
+		self.lightMap[pos] = light
+		self.to_update.append(pos)
 
 	def update_skylight(self):
 		pass

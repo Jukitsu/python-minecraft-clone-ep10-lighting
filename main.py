@@ -45,7 +45,7 @@ class Window(pyglet.window.Window):
 
 		# misc stuff
 
-		self.holding = 13
+		self.holding = random.choice((13, 14))
 	
 	def update(self, delta_time):
 		if round(1.0 / delta_time) < 500:

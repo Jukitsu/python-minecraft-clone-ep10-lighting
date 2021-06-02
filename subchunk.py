@@ -93,12 +93,12 @@ class Subchunk:
                         # since the vast majority of blocks are probably anyway going to be cubes, this won't impact performance all that much; the amount of useless faces drawn is going to be minimal
 
                         if block_type.is_cube:
-                            light_levels = [self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 0),
-                                                 self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 1),
-                                                 self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 2),
-                                                 self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 3),
-                                                 self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 4),
-                                                 self.parent.getfacelight(parent_lx, parent_ly, parent_lz, 5)]
+                            light_levels = [self.parent.getfacelight(parent_pos, 0),
+                                                 self.parent.getfacelight(parent_pos, 1),
+                                                 self.parent.getfacelight(parent_pos, 2),
+                                                 self.parent.getfacelight(parent_pos, 3),
+                                                 self.parent.getfacelight(parent_pos, 4),
+                                                 self.parent.getfacelight(parent_pos, 5)]
                             if not self.world.is_opaque_block((x + 1, y, z)): add_face(self, 0, light_levels, parent_pos)
                             if not self.world.is_opaque_block((x - 1, y, z)): add_face(self, 1, light_levels, parent_pos)
                             if not self.world.is_opaque_block((x, y + 1, z)): add_face(self, 2, light_levels, parent_pos)
@@ -110,6 +110,6 @@ class Subchunk:
                             light_levels = []
                             for i in range(len(block_type.vertex_positions)):
                                 flag = self.parent.is_opaque_block(parent_pos)
-                                light_levels.append(self.parent.getfacelight(parent_lx, parent_ly, parent_lz, i, flag))
+                                light_levels.append(self.parent.getfacelight(parent_pos, i, flag))
                             for i in range(len(block_type.vertex_positions)):
                                 add_face(self, i, light_levels, lpos)
