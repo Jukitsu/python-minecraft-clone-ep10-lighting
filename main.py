@@ -14,7 +14,6 @@ import camera
 
 import block_type
 import texture_manager
-import random
 
 import world
 
@@ -48,12 +47,10 @@ class Window(pyglet.window.Window):
 		self.holding = 13
 	
 	def update(self, delta_time):
-		if round(1.0 / delta_time) < 500:
-			print(f"FPS has dropped to: {round(1.0 / delta_time)}")
+		# print(f"FPS: {1.0 / delta_time}")
 
 		if not self.mouse_captured:
 			self.camera.input = [0, 0, 0]
-
 
 		self.camera.update_camera(delta_time)
 	
