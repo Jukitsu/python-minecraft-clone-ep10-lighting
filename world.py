@@ -121,11 +121,11 @@ class World:
                 for i in range(chunk.CHUNK_WIDTH):
                     for j in range(chunk.CHUNK_HEIGHT):
                         for k in range(chunk.CHUNK_LENGTH):
-                            if j == 13:
+                            if j == 15:
                                 current_chunk.blocks[i][j][k] = random.choices([0, 9, 10], [20, 2, 1])[0]
-                            elif j == 12:
+                            elif j == 14:
                                 current_chunk.blocks[i][j][k] = 2
-                            elif 9 < j < 12:
+                            elif 9 < j < 14:
                                 current_chunk.blocks[i][j][k] = 4
                             elif j < 10:
                                 current_chunk.blocks[i][j][k] = 5
@@ -354,6 +354,9 @@ class World:
         block_type = self.block_types[self.get_block_number(position)]
 
         if not block_type:
+            return False
+
+        if self.get_block_number(position) in self.light_blocks:
             return False
 
         return not block_type.transparent
