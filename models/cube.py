@@ -39,7 +39,7 @@ def get_face_shading_values(light_level, face_number):  # very inefficient way o
     if options.LIGHTING_TYPE == "EXPONENTIAL":
         light_multiplier = min((0.8)**(max_light_level - light_level) + options.BRIGHTNESS/10, 1)
     elif options.LIGHTING_TYPE == "LINEAR":
-        light_multiplier = min(light_level + options.BRIGHTNESS/8) * 1/max_light_level
+        light_multiplier = min((light_level + options.BRIGHTNESS/8) * 1/max_light_level)
     s = (shading_values[face_number][0] * light_multiplier)
     t = [s, s, s, s]
     return t
